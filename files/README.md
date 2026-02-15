@@ -50,29 +50,10 @@ npm start
 - No EMI payments during this grace period
 - Gives patients time to recover without financial pressure
 
-### 2. Dynamic Interest Rate (Risk-Balanced Pricing)
-The system uses a tiered interest rate structure that benefits both patient and lender:
-
-**Recovery Period → Interest Rate**
-- Quick recovery (0-4 weeks): 12% - Lowest rate for fastest recovery
-- Moderate recovery (5-8 weeks): 14% - Standard medical procedures
-- Longer recovery (9-12 weeks): 16% - More complex surgeries
-- Extended recovery (12+ weeks): 18% - Highest risk, highest rate
-
-**Why this works:**
-- **For Patients:** Grace period provides breathing room; rates are still competitive
-- **For Lenders:** Higher rates for longer recovery compensate for extended grace periods and higher risk
-- **Fair Balance:** Patients with quicker recovery get better rates as a reward for lower risk
-
-### 3. Affordable EMI Calculation
+### 2. Affordable EMI Calculation
 - Maximum EMI = 35% of monthly income
 - Uses reducing balance method for interest calculation
-- **Dynamic interest rate based on recovery period:**
-  - 0-4 weeks recovery: 12% annual rate
-  - 5-8 weeks recovery: 14% annual rate
-  - 9-12 weeks recovery: 16% annual rate
-  - 12+ weeks recovery: 18% annual rate
-- Longer recovery = higher interest rate to balance lender risk
+- Annual interest rate: 12%
 - Standard tenure: 24 months (can be extended if needed)
 
 ### 3. Risk Assessment Scoring
@@ -116,11 +97,9 @@ The system evaluates financial risk on a scale of 0-100 based on:
 **Output:**
 - Loan Amount: ₹4,50,000
 - Grace Period: 2 months
-- **Interest Rate: 14%** (8 weeks recovery = moderate tier)
 - Monthly EMI: ₹17,500 (35% of income)
 - Loan Tenure: 24 months
-- Total Interest: ~₹1,35,000
-- Total Repayment: ~₹5,85,000
+- Total Interest: ~₹1,20,000
 - Risk Score: Medium (45-50)
 - First EMI Date: 2 months from now
 

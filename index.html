@@ -287,6 +287,67 @@
             color: #1f2937;
             margin-bottom: 12px;
         }
+
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .comparison-table thead {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .comparison-table th {
+            padding: 16px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .comparison-table td {
+            padding: 16px;
+            border-bottom: 1px solid #e5e7eb;
+            font-size: 14px;
+            color: #374151;
+        }
+
+        .comparison-table tr:hover {
+            background: rgba(102, 126, 234, 0.05);
+        }
+
+        .best-option {
+            background: rgba(34, 197, 94, 0.1) !important;
+            border-left: 4px solid rgb(34, 197, 94);
+        }
+
+        .option-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .badge-best {
+            background: rgb(34, 197, 94);
+            color: white;
+        }
+
+        .badge-good {
+            background: rgb(59, 130, 246);
+            color: white;
+        }
+
+        .badge-moderate {
+            background: rgb(251, 146, 60);
+            color: white;
+        }
     </style>
 </head>
 <body>
@@ -308,6 +369,7 @@
             <div class="tabs">
                 <button class="tab-button active" onclick="switchTab('calculator')">Calculator</button>
                 <button class="tab-button" onclick="switchTab('results')" id="resultsTab">Results</button>
+                <button class="tab-button" onclick="switchTab('comparison')" id="comparisonTab">Compare Options</button>
                 <button class="tab-button" onclick="switchTab('about')">About</button>
             </div>
 
@@ -356,6 +418,16 @@
                 <div class="stats-grid" id="statsGrid"></div>
                 <div id="riskAssessment"></div>
                 <div class="summary-box" id="summaryBox"></div>
+            </div>
+
+            <!-- Comparison Tab -->
+            <div id="comparison" class="tab-content hidden">
+                <h2>Compare Financing Options</h2>
+                <p style="color: #6b7280; margin-bottom: 24px; font-size: 15px;">
+                    Explore different financing scenarios to find the lowest EMI that fits your budget. 
+                    Each option shows different combinations of down payment and loan tenure.
+                </p>
+                <div id="comparisonContent"></div>
             </div>
 
             <!-- About Tab -->
@@ -407,7 +479,7 @@
 
         <!-- Footer -->
         <div class="footer">
-            <p>Built for Hackathon 2025 | Compassionate Healthcare Finance</p>
+            <p>@ 2026 Pay-As-You-Recover. All rights reserved.</p>
         </div>
     </div>
 
@@ -495,10 +567,14 @@
                 interestRate: interestRate * 100 // Store as percentage
             });
 
+            // Generate comparison options
+            generateComparisonOptions(cost, income, savings, recovery);
+
             // Switch to results tab
             document.getElementById('results').classList.remove('hidden');
             document.getElementById('calculator').classList.add('hidden');
             document.getElementById('about').classList.add('hidden');
+            document.getElementById('comparison').classList.add('hidden');
             
             document.querySelectorAll('.tab-button').forEach(btn => {
                 btn.classList.remove('active');
@@ -606,6 +682,168 @@
                     <span style="font-weight: 700; color: #667eea; font-size: 18px;">${formatCurrency(results.totalRepayment)}</span>
                 </div>
             `;
+        }
+
+        function generateComparisonOptions(cost, income, savings, recovery) {
+            const options = [];
+            
+            // Get the dynamic interest rate based on recovery
+            let interestRate = 0.12;
+            if (recovery <= 4) {
+                interestRate = 0.12;
+            } else if (recovery <= 8) {
+                interestRate = 0.14;
+            } else if (recovery <= 12) {
+                interestRate = 0.16;
+            } else {
+                interestRate = 0.18;
+            }
+            
+            const monthlyRate = interestRate / 12;
+            const maxAffordableEMI = income * 0.35;
+            const gracePeriodMonths = Math.ceil(recovery / 4);
+
+            // Generate multiple options with different down payments and tenures
+            const downPaymentOptions = [
+                { percent: 0, label: 'No Down Payment' },
+                { percent: 10, label: '10% Down Payment' },
+                { percent: 20, label: '20% Down Payment' },
+                { percent: 30, label: '30% Down Payment' }
+            ];
+
+            const tenureOptions = [12, 18, 24, 36, 48]; // months
+
+            downPaymentOptions.forEach(dpOption => {
+                const downPayment = cost * (dpOption.percent / 100);
+                const loanAmount = cost - downPayment;
+
+                tenureOptions.forEach(tenure => {
+                    // Calculate EMI
+                    const emiAmount = (loanAmount * monthlyRate * Math.pow(1 + monthlyRate, tenure)) / 
+                                    (Math.pow(1 + monthlyRate, tenure) - 1);
+                    
+                    // Check if EMI is affordable
+                    if (emiAmount <= maxAffordableEMI) {
+                        const totalInterest = (emiAmount * tenure) - loanAmount;
+                        const totalRepayment = loanAmount + totalInterest;
+                        
+                        options.push({
+                            downPaymentPercent: dpOption.percent,
+                            downPayment: downPayment,
+                            downPaymentLabel: dpOption.label,
+                            loanAmount: loanAmount,
+                            tenure: tenure,
+                            emiAmount: emiAmount,
+                            totalInterest: totalInterest,
+                            totalRepayment: totalRepayment,
+                            affordabilityRatio: (emiAmount / income) * 100,
+                            gracePeriod: gracePeriodMonths,
+                            interestRate: interestRate * 100
+                        });
+                    }
+                });
+            });
+
+            // Sort by EMI amount (lowest first)
+            options.sort((a, b) => a.emiAmount - b.emiAmount);
+
+            displayComparisonOptions(options);
+        }
+
+        function displayComparisonOptions(options) {
+            if (options.length === 0) {
+                document.getElementById('comparisonContent').innerHTML = `
+                    <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 12px; padding: 20px; text-align: center;">
+                        <p style="color: #991b1b; font-weight: 600;">No affordable options available with current income.</p>
+                        <p style="color: #6b7280; font-size: 14px; margin-top: 8px;">Consider increasing down payment or improving income before taking this loan.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let tableHTML = `
+                <div style="background: rgba(34, 197, 94, 0.1); border: 1px solid rgba(34, 197, 94, 0.3); border-radius: 12px; padding: 16px; margin-bottom: 24px;">
+                    <p style="color: #166534; font-weight: 600; margin-bottom: 4px;">✓ ${options.length} Affordable Options Found</p>
+                    <p style="color: #4b5563; font-size: 14px;">All options below keep your EMI at or below 35% of your income</p>
+                </div>
+
+                <table class="comparison-table">
+                    <thead>
+                        <tr>
+                            <th>Option</th>
+                            <th>Down Payment</th>
+                            <th>Loan Amount</th>
+                            <th>Tenure</th>
+                            <th>Monthly EMI</th>
+                            <th>Grace Period</th>
+                            <th>Total Interest</th>
+                            <th>Total Repayment</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            options.forEach((option, index) => {
+                let badge = '';
+                let rowClass = '';
+                
+                if (index === 0) {
+                    badge = '<span class="option-badge badge-best">LOWEST EMI</span>';
+                    rowClass = 'best-option';
+                } else if (index === 1) {
+                    badge = '<span class="option-badge badge-good">Good Option</span>';
+                } else if (index === 2) {
+                    badge = '<span class="option-badge badge-moderate">Alternative</span>';
+                }
+
+                tableHTML += `
+                    <tr class="${rowClass}">
+                        <td>
+                            <strong>Option ${index + 1}</strong><br>
+                            ${badge}
+                        </td>
+                        <td>
+                            <strong>${formatCurrency(option.downPayment)}</strong><br>
+                            <span style="color: #6b7280; font-size: 13px;">${option.downPaymentPercent}% of cost</span>
+                        </td>
+                        <td>${formatCurrency(option.loanAmount)}</td>
+                        <td>
+                            <strong>${option.tenure} months</strong><br>
+                            <span style="color: #6b7280; font-size: 13px;">after grace period</span>
+                        </td>
+                        <td>
+                            <strong style="color: #667eea; font-size: 16px;">${formatCurrency(option.emiAmount)}</strong><br>
+                            <span style="color: #6b7280; font-size: 13px;">${option.affordabilityRatio.toFixed(1)}% of income</span>
+                        </td>
+                        <td>
+                            <strong>${option.gracePeriod} months</strong><br>
+                            <span style="color: #6b7280; font-size: 13px;">No payment</span>
+                        </td>
+                        <td>${formatCurrency(option.totalInterest)}</td>
+                        <td>
+                            <strong>${formatCurrency(option.totalRepayment)}</strong><br>
+                            <span style="color: #6b7280; font-size: 13px;">@ ${option.interestRate.toFixed(0)}% rate</span>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            tableHTML += `
+                    </tbody>
+                </table>
+
+                <div style="background: #f9fafb; border-radius: 12px; padding: 20px; margin-top: 24px;">
+                    <h3 style="font-size: 16px; margin-bottom: 12px;">💡 How to Choose:</h3>
+                    <ul style="padding-left: 20px; color: #4b5563; font-size: 14px; line-height: 1.8;">
+                        <li><strong>Lowest EMI:</strong> Best for tight budgets - pay less monthly but more overall</li>
+                        <li><strong>Shorter Tenure:</strong> Pay more monthly but save on total interest</li>
+                        <li><strong>Higher Down Payment:</strong> Reduces loan amount and total interest significantly</li>
+                        <li><strong>Balance:</strong> Consider your recovery period, emergency funds, and future income</li>
+                    </ul>
+                </div>
+            `;
+
+            document.getElementById('comparisonContent').innerHTML = tableHTML;
         }
     </script>
 </body>
